@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Plant Disease Detector</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="upload-container">
+    <h1>Plant Disease Detector</h1>
+    <p>Upload an image...</p>
+
+    <div class="upload-box" id="drop-area">
+      <p>Drag and drop file here</p>
+      <label class="browse-btn">
+        Browse files
+        <input type="file" id="image" accept="image/*" hidden />
+      </label>
+      <small>Limit 200MB per file • JPG, JPEG, PNG</small>
+    </div>
+
+    <div id="preview-container" style="display: none;">
+      <img id="preview" src="#" alt="Preview" />
+      <p id="file-name"></p>
+    </div>
+
+    <div class="btn-group">
+      <button id="analyze-btn">Analyse</button>
+      <button id="clear-btn" class="red">Clear Image</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const imageInput = document.getElementById('image');
+    const dropArea = document.getElementById('drop-area');
+    const preview = document.getElementById('preview');
+    const previewContainer = document.getElementById('preview-container');
+    const fileNameDisplay = document.getElementById('file-name');
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const resultDiv = document.getElementById('result');
+
+    let selectedFile = null;
+
+    imageInput.addEventListener('change', handleFile);
+
+    dropArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropArea.classList.add('hover');
+    });
+
+    dropArea.addEventListener('dragleave', () => {
+      dropArea.classList.remove('hover');
+    });
+
+    dropArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropArea.classList.remove('hover');
+      imageInput.files = e.dataTransfer.files;
+      handleFile();
+    });
+
+    function handleFile() {
+      const file = imageInput.files[0];
+      if (!file) return;
+
+      selectedFile = file;
+      preview.src = URL.createObjectURL(file);
+      previewContainer.style.display = 'block';
+      fileNameDisplay.innerText = `Selected file: ${file.name}`;
+    }
+
+    clearBtn.addEventListener('click', () => {
+      selectedFile = null;
+      imageInput.value = '';
+      previewContainer.style.display = 'none';
+      preview.src = '';
+      resultDiv.innerHTML = '';
+    });
+
+    analyzeBtn.addEventListener('click', async () => {
+      if (!selectedFile) return alert("Please select an image.");
+
+      resultDiv.innerHTML = "⏳ Analysing...";
+
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+
+      try {
+        const res = await fetch('/predict', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        resultDiv.innerHTML = `<h3>🩺 Prediction: <span>${data.prediction}</span></h3>`;
+      } catch (err) {
+        resultDiv.innerHTML = "⚠️ Error during prediction.";
+      }
+    });
+  </script>
+</body>
+</html>
